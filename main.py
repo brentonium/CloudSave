@@ -24,21 +24,22 @@ if not creds or not creds.valid:
         pickle.dump(creds, token)
 DRIVE = build('drive', 'v3', credentials=creds)
 
-def uploadFile(FILES):
+def uploadFile(FILES, Folder):
     for filename in FILES:
-        metadata = {'name': filename}
-        res = DRIVE.files().create(body=metadata, media_body=filename).execute()
+        folderId = getFolderId(Folder)
+        file_metadata = {
+            'name': filename,
+            'parents': folderId
+        }
+        res = DRIVE.files().create(body=file_metadata, media_body=filename, fields='id').execute()
         if res:
-            print('Uploaded "%s"' % (filename))
+            print('Uploaded "{}" to "{}"'.format(filename, Folder))
 
-def searchFolder(Folder):
+def getFolderId(Folder):
     # Searches only for folders based on the passed name
     res = DRIVE.files().list(q='name="{}" and mimeType="{}" and trashed=false'.format(Folder, 'application/vnd.google-apps.folder'), spaces='drive').execute()
     for file in res.get('files', []):
-        print('Found folder: {} ({})'.format(file.get('name'), file.get('id')))
         return file.get('id') # Finds Folder, returns id
-
-    print('Didnt find folder: {}'.format(Folder))
     return createFolder(Folder) # Doesnt find the folder, creates it, returns id
 
 def createFolder(Folder):
@@ -47,16 +48,16 @@ def createFolder(Folder):
         'mimeType': 'application/vnd.google-apps.folder'
     }
     file = DRIVE.files().create(body=file_metadata, fields='id').execute()
+    print('Created Folder "{}"'.format(Folder))
     return file.get('id')
 
 def main():
-    print('Hello')
     FILES = (
         'credentials.json',
         'test.txt'
     )
     Folder = 'CloudSaves'
-    print('OrdnerID: {}'.format(searchFolder(Folder)))
+    uploadFile(FILES, Folder)
 
 if __name__ == '__main__':
     main()
