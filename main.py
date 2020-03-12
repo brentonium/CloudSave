@@ -31,7 +31,7 @@ def main():
         'test.txt'
     )
     Folder = 'CloudSaves'
-    searchFolder(Folder)
+    print('OrdnerID: {}'.format(searchFolder(Folder)))
 
 def uploadFile(FILES):
     for filename in FILES:
@@ -41,16 +41,22 @@ def uploadFile(FILES):
             print('Uploaded "%s"' % (filename))
 
 def searchFolder(Folder):
-    res = DRIVE.files().list(q="name='CloudSaves'", spaces='drive').execute()
+    # Searches only for folders based on the passed argument
+    res = DRIVE.files().list(q='name="{}" and mimeType="{}"'.format(Folder, 'application/vnd.google-apps.folder'), spaces='drive').execute()
     for file in res.get('files', []):
-        # Process change
-        print('Found file: %s (%s)' % (file.get('name'), file.get('id')))
+        print('Found file: {} ({})'.format(file.get('name'), file.get('id')))
+        return file.get('id') # Found Folder
 
-    # if len(res) >= 1:
-    #     print('Ordner {} gefunden'.format(Folder))
-    # else:
-    #     createFolder(Folder)
+    print('kein ordner da ({})'.format(Folder))
+    return createFolder(Folder) # Didnt find the folder
 
+def createFolder(Folder):
+    file_metadata = {
+        'name': Folder,
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    file = DRIVE.files().create(body=file_metadata, fields='id').execute()
+    return file.get('id')
 
 if __name__ == '__main__':
     main()
